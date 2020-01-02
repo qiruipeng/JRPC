@@ -2,6 +2,7 @@ package com.study.rpc.example.client;
 
 import com.study.rpc.client.RpcClientProxy;
 import com.study.rpc.example.sever.SayIntface;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.springframework.util.StopWatch;
 
@@ -12,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
  * @author: qirp
  * @since: 2019/12/31 14:10
  **/
+@Slf4j
 public class clientMain {
 
     @Test
@@ -49,7 +51,6 @@ public class clientMain {
 
         sw.stop();
 
-        String tip = String.format("RPC调用总共耗时: [%s] 分钟", sw.getTotalTimeSeconds());
-        System.out.println(tip);
+        log.info("RPC调用总共耗时:{}",sw.prettyPrint());
     }
 }

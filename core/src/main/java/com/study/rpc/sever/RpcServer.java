@@ -1,17 +1,17 @@
 package com.study.rpc.sever;
 
+import com.study.rpc.core.ThreadLocal.CommonThreadLocal;
+import com.study.rpc.core.threadFactory.RpcThreadPool;
+import com.study.rpc.core.threadFactory.ThreadPoolHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * 服务端实现
@@ -22,8 +22,9 @@ import java.util.Map;
 @Slf4j
 public class RpcServer {
     //替换成zk等
-    private static Map<String,Class<?>> registryMap = new HashMap<>();
+    private static Map<String,Class<?>> registryMap = CommonThreadLocal.registryThreadLocal.get();
     private int port;
+    Executor executor = new RpcThreadPool().getExecutor(100,1000);
 
     public RpcServer(int port) {
         this.port = port;
@@ -31,7 +32,11 @@ public class RpcServer {
 
     //注册
     public RpcServer registry(Class intface,Class impl){
-        registryMap.put(intface.getName(),impl);
+        if(null == registryMap){
+            Map<String,Class<?>> map = new HashMap<>();
+            map.put(intface.getName(),impl);
+            CommonThreadLocal.registryThreadLocal.set(map);
+        }
         return this;
     }
 
@@ -42,33 +47,7 @@ public class RpcServer {
 
         while (true){
             Socket socket = server.accept();
-            ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
-            String serverName = input.readUTF();
-            String methodName = input.readUTF();
-            try {
-                Class<?>[] parameterTypes = (Class<?>[])input.readObject();
-                Object[] arguments = (Object[]) input.readObject();
-                //获取目标类实例
-                Class serverClass = registryMap.get(serverName);
-                //拿到具体的执行方法
-                Method method = serverClass.getMethod(methodName,parameterTypes);
-
-                //invoke出结果
-                Object result = method.invoke(serverClass.newInstance(),arguments);
-                ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                outputStream.writeObject(result);
-
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            }
+            executor.execute(new ThreadPoolHandler(socket));
         }
 
     }
