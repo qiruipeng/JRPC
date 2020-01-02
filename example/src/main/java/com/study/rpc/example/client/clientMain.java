@@ -27,6 +27,7 @@ public class clientMain {
     /**
      * 模拟一万的瞬时并发,就是同时有一万的请求发过去
      * 可以通过countdownlatch，await一直阻塞，直到一万了才去请求
+     * 通过配置服务端jdk环境，来大致确定能够承受最大的并发量
      * @throws InterruptedException
      */
     @Test

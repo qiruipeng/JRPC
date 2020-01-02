@@ -46,6 +46,9 @@ public class RpcServer {
         log.info("...socketrpc 已经启动...");
 
         while (true){
+            //socket是阻塞的，也就意味着有个队列来存储过来的请求
+            //管理客户连接请求的任务是由操作系统来完成的,操作系统把这些连接请求存储在一个先进先出的队列中
+            //然后开启一个线程或者从线程池中拿出一个线程执行io请求
             Socket socket = server.accept();
             executor.execute(new ThreadPoolHandler(socket));
         }
